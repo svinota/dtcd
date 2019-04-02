@@ -34,7 +34,7 @@ setup(name='dtcd',
       url='https://github.com/svinota/dtcd',
       license='dual license GPLv2+ and Apache v2',
       packages=['dtcd',],
-      scripts=['./src/dtcd', ]
+      scripts=['./src/dtcd', ],
       classifiers=['License :: OSI Approved :: GNU General Public ' +
                    'License v2 or later (GPLv2+)',
                    'License :: OSI Approved :: Apache Software License',
