@@ -22,24 +22,27 @@ class APIv1(object):
 
     @route('GET', '/network/')
     def list_network(self):
-        allocations = {x: str(y) for (x, y) in self.allocations.items()}
+        allocations = {str(x): y for (x, y) in self.allocations.items()}
         return bottle.template('{{!ret}}', ret=json.dumps(allocations))
 
     @route('POST', '/network/')
     def allocate_network(self):
         uuid = bottle.request.body.getvalue().decode('utf-8')
-        if uuid in self.allocations:
-            network = self.allocations[uuid]
-        else:
-            network = self.networks.pop()
-            self.allocations[uuid] = network
+        network = self.networks.pop()
+        self.allocations[network] = uuid
         return bottle.template('{{!ret}}', ret=str(network))
 
     @route('DELETE', '/network/')
     def free_network(self):
-        uuid = bottle.request.body.getvalue().decode('utf-8')
+        network = (netaddr
+                   .IPNetwork(bottle
+                              .request
+                              .body
+                              .getvalue()
+                              .decode('utf-8')))
+        (self
+         .allocations
+         .pop(network))
         (self
          .networks
-         .append(self
-                 .allocations
-                 .pop(uuid)))
+         .append(network))
