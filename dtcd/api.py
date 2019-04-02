@@ -1,6 +1,7 @@
 import json
 import bottle
 import netaddr
+import threading
 
 
 def route(method, path):
@@ -19,6 +20,8 @@ class APIv1(object):
         sn = netaddr.IPNetwork(supernet)
         self.networks = list(sn.subnet(subnet_mask))
         self.allocations = {}
+        self.lock = threading.Lock()
+        self.locks = {}
 
     @route('GET', '/network/')
     def list_network(self):
@@ -46,3 +49,27 @@ class APIv1(object):
         (self
          .networks
          .append(network))
+
+    @route('GET', '/lock/')
+    def list_lock(self):
+        return bottle.template('{{!ret}}', ret=json.dumps(self.locks))
+
+    @route('POST', '/lock/')
+    def allocate_lock(self):
+        lock_id = bottle.request.body.getvalue().decode('utf-8')
+        with self.lock:
+            if lock_id in self.locks:
+                return bottle.template('{{!ret}}', ret='')
+            else:
+                self.locks[lock_id] = True
+                return bottle.template('{{!ret}}', ret=lock_id)
+
+    @route('DELETE', '/lock/')
+    def free_lock(self):
+        lock_id = bottle.request.body.getvalue().decode('utf-8')
+        with self.lock:
+            if lock_id in self.locks:
+                self.locks.pop(lock_id)
+                return bottle.template('{{!ret}}', ret=lock_id)
+            else:
+                return bottle.template('{{!ret}}', ret='')
