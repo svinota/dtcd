@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import socket
+import bottle
+from dtcd.api import APIv1
+from dtcd.config import Config
+from dtcd.http import Server
+
+config = Config().load()
+
+app = APIv1(config['supernet'], config['subnet_mask'])
+
+for kw in dir(app):
+    method = getattr(app, kw)
+    if hasattr(method, 'http_route'):
+        path = '%s%s' % (app.prefix, method.http_route)
+        bottle.route(path, method.http_method, method)
+
+try:
+    listen = config.get('listen', '127.0.0.1:7623')
+    if listen.find('/') > -1:
+        spec = {'family': socket.AF_UNIX,
+                'host': listen,
+                'port': 0}
+    else:
+        host, port = listen.split(':')
+        spec = {'family': socket.AF_INET,
+                'host': host,
+                'port': int(port)}
+    bottle.run(server=Server(**spec))
+finally:
+    pass
