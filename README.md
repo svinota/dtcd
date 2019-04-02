@@ -1,9 +1,18 @@
-dtc
-===
+dtcd
+====
 
 Dynamic network blocks allocation via simple HTTP RPC
 
-Usage::
+requirements
+------------
+
+* python
+* netaddr
+
+usage
+-----
+
+With curl::
 
     # allocate a network
     $ curl -X POST --data "$uuid" http://localhost:7623/v1/network/
