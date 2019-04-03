@@ -16,27 +16,33 @@ class APIv1(object):
 
     prefix = '/v1'
 
-    def __init__(self, supernet, subnet_mask):
-        sn = netaddr.IPNetwork(supernet)
-        self.networks = list(sn.subnet(subnet_mask))
-        self.allocations = {}
+    def __init__(self, config):
+        sn = netaddr.IPNetwork(config['supernet'])
+        sn6 = netaddr.IPNetwork(config['supernet6'])
+
+        self.networks = {'ipv4': list(sn.subnet(config['subnet_mask'])),
+                         'ipv6': list(sn6.subnet(config['subnet_mask6']))}
+        self.allocations = {'ipv4': {},
+                            'ipv6': {}}
+
         self.lock = threading.Lock()
         self.locks = {}
 
     @route('GET', '/network/')
     def list_network(self):
-        allocations = {str(x): y for (x, y) in self.allocations.items()}
+        allocations = {z: {str(x): y for (x, y) in self.allocations[z].items()}
+                       for z in self.allocations}
         return bottle.template('{{!ret}}', ret=json.dumps(allocations))
 
-    @route('POST', '/network/')
-    def allocate_network(self):
+    @route('POST', '/network/<ipv:re:(%s|%s)>/' % ('ipv4', 'ipv6'))
+    def allocate_network(self, ipv):
         uuid = bottle.request.body.getvalue().decode('utf-8')
-        network = self.networks.pop()
-        self.allocations[network] = uuid
+        network = self.networks[ipv].pop()
+        self.allocations[ipv][network] = uuid
         return bottle.template('{{!ret}}', ret=str(network))
 
-    @route('DELETE', '/network/')
-    def free_network(self):
+    @route('DELETE', '/network/<ipv:re:(%s|%s)>/' % ('ipv4', 'ipv6'))
+    def free_network(self, ipv):
         network = (netaddr
                    .IPNetwork(bottle
                               .request
@@ -44,10 +50,10 @@ class APIv1(object):
                               .getvalue()
                               .decode('utf-8')))
         (self
-         .allocations
+         .allocations[ipv]
          .pop(network))
         (self
-         .networks
+         .networks[ipv]
          .append(network))
 
     @route('GET', '/lock/')

@@ -8,7 +8,7 @@ from dtcd.http import Server
 
 config = Config().load()
 
-app = APIv1(config['supernet'], config['subnet_mask'])
+app = APIv1(config)
 
 for kw in dir(app):
     method = getattr(app, kw)
